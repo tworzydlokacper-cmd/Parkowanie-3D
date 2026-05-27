@@ -7,13 +7,19 @@ public class CarSensors : MonoBehaviour
     public float sideSensorLength = 5f;       
     public float frontBackSensorLength = 3f;  
 
+    [Header("Uniwersalne Wymiary Luk")]
+    public float minPerpendicularGap = 2.5f; 
+    public float maxPerpendicularGap = 5.5f; // Zwiększone, aby uniknąć martwej strefy
+    public float minParallelGap = 5.5f;      // Zmniejszone, aby uniknąć martwej strefy
+
     [Header("Dane dla Maszyny Stanów (Osoba 2)")]
     public bool isGapDetected = false; 
+    public bool isGapValid = false; 
     public float lastMeasuredGapLength = 0f; 
-    public float minimumRequiredGap = 6.75f; 
+    public bool isFrontBlocked = false; // Flaga dla systemu awaryjnego
 
     [Header("Interfejs Ekranu")]
-    public TextMeshProUGUI uiText; // TO POLE NAM SIĘ POJAWI W UNITY!
+    public TextMeshProUGUI uiText; 
 
     private Vector3 gapStartPosition;
 
@@ -49,7 +55,11 @@ public class CarSensors : MonoBehaviour
     {
         bool rightSideClear = ScanDirection(rightSensors, transform.right, sideSensorLength, Color.green);
         ScanDirection(leftSensors, -transform.right, sideSensorLength, Color.green);
-        ScanDirection(frontSensors, transform.forward, frontBackSensorLength, Color.blue);
+        
+        // Sprawdzamy przód pod kątem systemu awaryjnego
+        bool frontClear = ScanDirection(frontSensors, transform.forward, frontBackSensorLength, Color.blue);
+        isFrontBlocked = !frontClear; 
+        
         ScanDirection(backSensors, -transform.forward, frontBackSensorLength, Color.yellow);
 
         MeasureParkingGap(rightSideClear);
@@ -83,6 +93,7 @@ public class CarSensors : MonoBehaviour
         if (isSideClear && !isGapDetected)
         {
             isGapDetected = true;
+            isGapValid = false;
             gapStartPosition = transform.position; 
             uiText.text = "Skanowanie luki...";
             uiText.color = Color.yellow;
@@ -91,16 +102,23 @@ public class CarSensors : MonoBehaviour
         {
             isGapDetected = false;
             lastMeasuredGapLength = Vector3.Distance(gapStartPosition, transform.position);
-            
             float roundedGap = Mathf.Round(lastMeasuredGapLength * 100f) / 100f;
 
-            if (lastMeasuredGapLength >= minimumRequiredGap)
+            if (lastMeasuredGapLength >= minParallelGap)
             {
-                uiText.text = $"Luka znaleziona!\nRozmiar: {roundedGap}m\nMozna parkowac.";
+                isGapValid = true;
+                uiText.text = $"Koperta znaleziona!\nRozmiar: {roundedGap}m\nHamuje!";
                 uiText.color = Color.green;
+            }
+            else if (lastMeasuredGapLength >= minPerpendicularGap && lastMeasuredGapLength <= maxPerpendicularGap)
+            {
+                isGapValid = true;
+                uiText.text = $"Miejsce prostopadle!\nRozmiar: {roundedGap}m\nHamuje!";
+                uiText.color = Color.cyan;
             }
             else
             {
+                isGapValid = false;
                 uiText.text = $"Luka za mala!\nRozmiar: {roundedGap}m\nSzukam dalej...";
                 uiText.color = Color.red;
             }
