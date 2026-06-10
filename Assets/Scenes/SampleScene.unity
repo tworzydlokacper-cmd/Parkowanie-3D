@@ -296,6 +296,7 @@ MonoBehaviour:
   isGapDetected: 0
   isGapValid: 0
   isFrontBlocked: 0
+  parkingMode: 0
   uiText: {fileID: 1200329229}
   rightSensors:
   - {x: 1, y: 0, z: 2}
@@ -350,8 +351,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParkingFSM
   currentState: 0
-  maneuverPhase: 0
-  maneuverTimer: 0
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -727,7 +726,7 @@ Transform:
   m_GameObject: {fileID: 547943090}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.91, y: 1.22, z: 12}
+  m_LocalPosition: {x: 1.97, y: 1.22, z: 18.42}
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -839,7 +838,7 @@ Transform:
   m_GameObject: {fileID: 698516065}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.2, y: 0.27, z: 29.94}
+  m_LocalPosition: {x: -1.45, y: 0.27, z: 45.33}
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
