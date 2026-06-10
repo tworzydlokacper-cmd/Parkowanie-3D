@@ -9,7 +9,8 @@ public class CarController : MonoBehaviour
     public WheelCollider rearRightWheel;
 
     [Header("Parametry Jazdy")]
-    public float maxMotorForce = 500f;
+    // ZWIĘKSZONO MOC (500f na 2000f), żeby na pewno ruszył z masą 1500kg
+    public float maxMotorForce = 2000f; 
     public float maxBrakeForce = 3000f;
     public float maxSteerAngle = 35f;
     public float timeToFullLock = 1f;
@@ -21,17 +22,17 @@ public class CarController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         
-        // Zabezpieczenie przed wywrotkami
+        // Zabezpieczenie przed wywrotkami i masa 1.5 tony
         rb.mass = 1500f; 
         rb.centerOfMass = new Vector3(0f, -1.5f, 0f); 
     }
 
     public void MoveCar(float gasInput, float steeringInput)
     {
+        // Hamowanie, gdy nie ma gazu
         if (gasInput == 0f)
         {
-            rearLeftWheel.motorTorque = 0f;
-            rearRightWheel.motorTorque = 0f;
+            rearLeftWheel.motorTorque = rearRightWheel.motorTorque = 0f;
             frontLeftWheel.brakeTorque = frontRightWheel.brakeTorque = maxBrakeForce;
             rearLeftWheel.brakeTorque = rearRightWheel.brakeTorque = maxBrakeForce;
         }
@@ -41,17 +42,16 @@ public class CarController : MonoBehaviour
             rearLeftWheel.brakeTorque = rearRightWheel.brakeTorque = 0f;
             
             float torque = gasInput * maxMotorForce;
-            rearLeftWheel.motorTorque = torque;
-            rearRightWheel.motorTorque = torque;
+            rearLeftWheel.motorTorque = rearRightWheel.motorTorque = torque;
         }
 
+        // Układ kierowniczy
         float targetAngle = steeringInput * maxSteerAngle;
         float steerSpeed = (maxSteerAngle * 2) / timeToFullLock;
         
         currentSteerAngle = Mathf.MoveTowards(currentSteerAngle, targetAngle, steerSpeed * Time.deltaTime);
 
-        frontLeftWheel.steerAngle = currentSteerAngle;
-        frontRightWheel.steerAngle = currentSteerAngle;
+        frontLeftWheel.steerAngle = frontRightWheel.steerAngle = currentSteerAngle;
     }
 
     public float GetSteeringAngleTowards(Vector3 targetPosition)
@@ -59,10 +59,5 @@ public class CarController : MonoBehaviour
         Vector3 relativePos = transform.InverseTransformPoint(targetPosition);
         float angle = Mathf.Atan2(relativePos.x, relativePos.z) * Mathf.Rad2Deg;
         return Mathf.Clamp(angle / maxSteerAngle, -1f, 1f);
-    }
-
-    public float GetDistanceTo(Vector3 targetPosition)
-    {
-        return Vector3.Distance(transform.position, targetPosition);
     }
 }
