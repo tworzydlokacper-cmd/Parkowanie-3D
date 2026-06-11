@@ -11,12 +11,13 @@ public class CarSensors : MonoBehaviour
     public bool isGapDetected = false;
     public bool isGapValid = false;
     public bool isFrontBlocked = false;
-    public int parkingMode = 0; 
+    public int parkingMode = 0; // 0 = brak, 1 = koperta, 2 = prostopadłe
     public TextMeshProUGUI uiText;
 
     private Vector3 gapStartPosition;
     private bool hasSeenFirstCar = false; 
 
+    // Lasery boczne podniesione na Y = 0.5f, żeby nie trafiały w asfalt
     public Vector3[] rightSensors = { new Vector3(1, 0.5f, 2), new Vector3(1, 0.5f, 0.6f), new Vector3(1, 0.5f, -0.6f), new Vector3(1, 0.5f, -2) };
     public Vector3[] leftSensors = { new Vector3(-1, 0.5f, 2), new Vector3(-1, 0.5f, 0.6f), new Vector3(-1, 0.5f, -0.6f), new Vector3(-1, 0.5f, -2) };
     
@@ -50,27 +51,36 @@ public class CarSensors : MonoBehaviour
 
     void MeasureParkingGap(bool isSideClear)
     {
+        // 1. Zdjęcie blokady po zauważeniu pierwszego zaparkowanego auta
         if (!isSideClear) 
         {
             hasSeenFirstCar = true;
         }
 
+        // 2. Start pomiaru luki
         if (isSideClear && !isGapDetected && hasSeenFirstCar)
         {
             isGapDetected = true; isGapValid = false; parkingMode = 0;
             gapStartPosition = transform.position;
             if (uiText != null) { uiText.text = "Skanowanie..."; uiText.color = Color.yellow; }
         }
+        // 3. Koniec luki i weryfikacja wymiarów
         else if (!isSideClear && isGapDetected)
         {
             isGapDetected = false;
-            float gap = Vector3.Distance(gapStartPosition, transform.position);
             
-            if (gap >= 5.5f) { 
+            // KOREKTA INŻYNIERSKA: Dystans fizyczny luki to przejechany odcinek + rozstaw skanerów na pojeździe (4 metry)
+            float traveledDistance = Vector3.Distance(gapStartPosition, transform.position);
+            float actualGap = traveledDistance + 4.0f; 
+            
+            Debug.Log($"Wykryto lukę! Przejechano: {traveledDistance}m | Fizyczny rozmiar luki: {actualGap}m");
+
+            // Rozpoznawanie trybu parkowania na podstawie skorygowanego rozmiaru luki
+            if (actualGap >= 6.0f) { 
                 isGapValid = true; parkingMode = 1; 
                 if (uiText != null) { uiText.text = "Koperta!"; uiText.color = Color.green; } 
             }
-            else if (gap >= 2.5f) { 
+            else if (actualGap >= 3.0f) { 
                 isGapValid = true; parkingMode = 2; 
                 if (uiText != null) { uiText.text = "Prostopadłe!"; uiText.color = Color.cyan; } 
             }

@@ -393,6 +393,7 @@ GameObject:
   m_Component:
   - component: {fileID: 506576720}
   - component: {fileID: 506576719}
+  - component: {fileID: 506576721}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -413,6 +414,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParkingManager
   playerCarPrefab: {fileID: 112611449700519662, guid: 5eff2725ed44bd543bdfc644dca877c4, type: 3}
+  parkedCarPrefab: {fileID: 5183419246267344473, guid: 23c479a8bdb51664aa8ff64d26369e2f, type: 3}
 --- !u!4 &506576720
 Transform:
   m_ObjectHideFlags: 0
@@ -428,6 +430,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &506576721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 506576718}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 061c2b5cb9b87ce46a2f05c1dc839023, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ParkingLotGenerator
+  numberOfSpots: 6
+  spotWidth: 3.5
+  spotLength: 6
+  emptySpotIndex: 3
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0

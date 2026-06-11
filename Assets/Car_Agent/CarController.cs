@@ -15,9 +15,9 @@ public class CarController : MonoBehaviour
 
     [Header("Geometria Ackermanna")]
     [Tooltip("Dystans między przednią a tylną osią (L)")]
-    public float wheelbase = 2.7f; 
+    public float wheelbase = 1.76f; 
     [Tooltip("Dystans między lewym a prawym kołem (W)")]
-    public float trackWidth = 1.5f; 
+    public float trackWidth = 1.0f; 
 
     [Header("Regulator PID (P-Controller)")]
     [Tooltip("Wzmocnienie - jak mocno auto reaguje na błąd odległości")]
@@ -28,8 +28,13 @@ public class CarController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.mass = 1500f;
-        rb.centerOfMass = new Vector3(0f, -1.0f, 0f);
+        
+        // Zabezpieczenie fizyki auta
+        if (rb != null)
+        {
+            rb.mass = 1500f;
+            rb.centerOfMass = new Vector3(0f, -1.0f, 0f);
+        }
     }
 
     public void MoveCar(float gasInput, float steeringInput)
@@ -78,10 +83,16 @@ public class CarController : MonoBehaviour
             return;
         }
 
+        // KOREKTA INŻYNIERSKA: Zabezpieczenie przed polskim przecinkiem/kropką w Unity!
+        // Jeśli Unity wyzeruje zmienne, wymuszamy nasze bezpieczne wartości.
+        float safeWheelbase = wheelbase <= 0.1f ? 1.76f : wheelbase;
+        float safeTrackWidth = trackWidth <= 0.1f ? 1.0f : trackWidth;
+
         float angleRad = Mathf.Abs(steerAngle) * Mathf.Deg2Rad;
 
-        float insideAngle = Mathf.Atan(wheelbase / ((wheelbase / Mathf.Tan(angleRad)) - (trackWidth / 2f))) * Mathf.Rad2Deg;
-        float outsideAngle = Mathf.Atan(wheelbase / ((wheelbase / Mathf.Tan(angleRad)) + (trackWidth / 2f))) * Mathf.Rad2Deg;
+        // Geometria Ackermanna - koło wewnętrzne skręca pod większym kątem
+        float insideAngle = Mathf.Atan(safeWheelbase / ((safeWheelbase / Mathf.Tan(angleRad)) - (safeTrackWidth / 2f))) * Mathf.Rad2Deg;
+        float outsideAngle = Mathf.Atan(safeWheelbase / ((safeWheelbase / Mathf.Tan(angleRad)) + (safeTrackWidth / 2f))) * Mathf.Rad2Deg;
 
         if (steerAngle > 0) 
         {

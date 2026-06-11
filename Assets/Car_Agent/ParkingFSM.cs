@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// 1. INTERFEJS STANU (Zgodnie z wymaganiami z dokumentacji!)
+// 1. INTERFEJS STANU
 public interface ICarState
 {
     void Enter(ParkingFSM fsm);
@@ -8,7 +8,7 @@ public interface ICarState
     void Exit(ParkingFSM fsm);
 }
 
-// 2. KLASA KONTEKSTU (Główny skrypt FSM podpięty do auta)
+// 2. KLASA KONTEKSTU (Główny skrypt)
 public class ParkingFSM : MonoBehaviour
 {
     public CarController controller;
@@ -16,7 +16,6 @@ public class ParkingFSM : MonoBehaviour
 
     private ICarState currentState;
 
-    // Instancje stanów gotowe do użycia
     public PatrolState patrolState = new PatrolState();
     public ParallelParkState parallelState = new ParallelParkState();
     public PerpendicularParkState perpendicularState = new PerpendicularParkState();
@@ -27,26 +26,23 @@ public class ParkingFSM : MonoBehaviour
         controller = GetComponent<CarController>();
         sensors = GetComponent<CarSensors>();
         
-        // Zaczynamy od szukania luki
         ChangeState(patrolState);
     }
 
     void FixedUpdate()
     {
-        // Globalne przerwanie - awaryjne hamowanie (wymóg dla HFSM i Mapy C)
+        // Globalne przerwanie - uwaga, to zaraz rozwiniemy o HFSM!
         if (sensors.isFrontBlocked && currentState != emergencyState)
         {
             ChangeState(emergencyState);
         }
 
-        // Wykonywanie logiki aktywnego stanu
         if (currentState != null)
         {
             currentState.Execute(this);
         }
     }
 
-    // Funkcja zarządzająca przejściami (Tranzycjami)
     public void ChangeState(ICarState newState)
     {
         if (currentState != null)
@@ -58,7 +54,7 @@ public class ParkingFSM : MonoBehaviour
 }
 
 // ==========================================================
-// 3. OSOBNE KLASY STANÓW (Wzorzec State / Gang of Four)
+// 3. OSOBNE KLASY STANÓW 
 // ==========================================================
 
 public class PatrolState : ICarState
@@ -67,9 +63,8 @@ public class PatrolState : ICarState
 
     public void Execute(ParkingFSM fsm)
     {
-        fsm.controller.MoveCar(0.3f, 0f); // Patroluj powoli
+        fsm.controller.MoveCar(0.3f, 0f);
 
-        // Tranzycja do odpowiedniego manewru
         if (fsm.sensors.isGapValid && !fsm.sensors.isGapDetected)
         {
             if (fsm.sensors.parkingMode == 1)
@@ -87,6 +82,7 @@ public class ParallelParkState : ICarState
     private float initialYAngle;
     private int phase;
     private float timer;
+    private Vector3 phase2StartPosition; // Nowy czujnik (Odometria)
 
     public void Enter(ParkingFSM fsm)
     {
@@ -103,19 +99,26 @@ public class ParallelParkState : ICarState
             if (timer > 1.0f) { timer = 0f; phase = 1; }
         }
         else if (phase == 1) {
-            fsm.controller.MoveCar(-0.2f, 1f);
+            fsm.controller.MoveCar(-0.4f, 1f);
             float currentAngle = Mathf.DeltaAngle(initialYAngle, fsm.transform.eulerAngles.y);
-            if (currentAngle < -35f) { phase = 2; timer = 0f; }
+            
+            if (currentAngle < -35f) { 
+                phase = 2; 
+                // Zapisujemy pozycję, w której auto skończyło łamać się do zatoki
+                phase2StartPosition = fsm.transform.position; 
+            }
         }
         else if (phase == 2) {
-            fsm.controller.MoveCar(-0.2f, 0f);
-            timer += Time.fixedDeltaTime;
-            if (timer > 2.3f) { phase = 3; }
+            fsm.controller.MoveCar(-0.4f, 0f);
+            
+            // ROZWIĄZANIE UNIWERSALNE: Cofa prosto przez równe 1.8 metra (odometria), niezależnie od pozycji na mapie!
+            float distanceTraveled = Vector3.Distance(phase2StartPosition, fsm.transform.position);
+            if (distanceTraveled > 1.8f) { phase = 3; } 
         }
         else if (phase == 3) {
-            fsm.controller.MoveCar(-0.2f, -1f);
+            fsm.controller.MoveCar(-0.4f, -1f);
             float currentAngle = Mathf.DeltaAngle(initialYAngle, fsm.transform.eulerAngles.y);
-            if (currentAngle > -5f) { phase = 4; }
+            if (currentAngle > -2f) { phase = 4; }
         }
         else if (phase == 4) {
             fsm.controller.StopCar();
@@ -134,6 +137,7 @@ public class PerpendicularParkState : ICarState
     private float initialYAngle;
     private int phase;
     private float timer;
+    private Vector3 phase2StartPosition;
 
     public void Enter(ParkingFSM fsm)
     {
@@ -150,14 +154,20 @@ public class PerpendicularParkState : ICarState
             if (timer > 1.0f) { timer = 0f; phase = 1; }
         }
         else if (phase == 1) {
-            fsm.controller.MoveCar(-0.2f, 1f);
+            fsm.controller.MoveCar(-0.4f, 1f);
             float currentAngle = Mathf.DeltaAngle(initialYAngle, fsm.transform.eulerAngles.y);
-            if (currentAngle < -85f) { phase = 2; timer = 0f; }
+            
+            if (currentAngle < -85f) { 
+                phase = 2; 
+                phase2StartPosition = fsm.transform.position;
+            }
         }
         else if (phase == 2) {
-            fsm.controller.MoveCar(-0.2f, 0f);
-            timer += Time.fixedDeltaTime;
-            if (timer > 2.0f) { phase = 3; }
+            fsm.controller.MoveCar(-0.4f, 0f);
+            
+            // UNIWERSALNE: Wjeżdża na głębokość 2.0 metrów od momentu naprostowania się
+            float distanceTraveled = Vector3.Distance(phase2StartPosition, fsm.transform.position);
+            if (distanceTraveled > 2.0f) { phase = 3; } 
         }
         else if (phase == 3) {
             fsm.controller.StopCar();
@@ -185,7 +195,7 @@ public class EmergencyState : ICarState
 
     public void Execute(ParkingFSM fsm)
     {
-        fsm.controller.StopCar(); // Utrzymaj hamulec
+        fsm.controller.StopCar(); 
     }
 
     public void Exit(ParkingFSM fsm) { }

@@ -68,7 +68,7 @@ public class ParkingManager : MonoBehaviour
         if (isParallel)
         {
             // KOPERTA: Odpowiednio powiększone miejsca (szeroka luka)
-            float[] carPositionsZ = { 0f, 16f, 24f }; 
+            float[] carPositionsZ = { 0f, 11.5f, 18f }; 
             
             foreach (float z in carPositionsZ)
             {
