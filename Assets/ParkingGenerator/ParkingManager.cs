@@ -5,6 +5,9 @@ public class ParkingManager : MonoBehaviour
     [Header("TUTAJ WEPNIJ SWOJE AUTO (PREFAB Z CANVAS)")]
     public GameObject playerCarPrefab;
 
+    [Header("TUTAJ WEPNIJ MODEL ZAPARKOWANEGO AUTA (PREFAB) - OPCJONALNIE")]
+    public GameObject parkedCarPrefab;
+
     private bool showMenu = true;
     private GameObject currentMap;
     private GameObject spawnedCar;
@@ -30,19 +33,17 @@ public class ParkingManager : MonoBehaviour
         
         if (playerCarPrefab != null)
         {
-            // Zespawnuj auto na środku drogi (X=0) i zrównaj z pasem
-            spawnedCar = Instantiate(playerCarPrefab, new Vector3(0f, 0.5f, -10f), Quaternion.identity);
+            // Auto startuje na bezpiecznej pozycji środka pasa drogi (X = -2.5f)
+            spawnedCar = Instantiate(playerCarPrefab, new Vector3(-2.5f, 0.5f, -10f), Quaternion.identity);
             
-            // KLUCZOWE ZABEZPIECZENIE: Zdejmij isKinematic na Rigidbody, żeby ruszył!
             Rigidbody rb = spawnedCar.GetComponent<Rigidbody>();
             if (rb != null) 
             {
                 rb.isKinematic = false; 
-                rb.mass = 1500f; // Wymuś 1.5 tony
-                rb.centerOfMass = new Vector3(0f, -1.5f, 0f); // Wymuś środek ciężkości
+                rb.mass = 1500f; 
+                rb.centerOfMass = new Vector3(0f, -1.5f, 0f); 
             }
             
-            // Aktywacja kamery auta
             Camera carCam = spawnedCar.GetComponentInChildren<Camera>();
             if (carCam != null) carCam.gameObject.SetActive(true);
         }
@@ -60,36 +61,47 @@ public class ParkingManager : MonoBehaviour
 
         GameObject road = GameObject.CreatePrimitive(PrimitiveType.Cube);
         road.transform.SetParent(currentMap.transform);
-        road.transform.localScale = new Vector3(15f, 0.1f, 50f);
-        road.transform.position = new Vector3(-2f, 0f, 15f);
+        road.transform.localScale = new Vector3(25f, 0.1f, 60f);
+        road.transform.position = new Vector3(-3f, 0f, 20f); 
         road.GetComponent<MeshRenderer>().material = asphaltMat;
 
         if (isParallel)
         {
-            // KOPERTA (Luka między 0 a 12, auta na X=3, laser 8m sięgnie)
-            float[] carPositionsZ = { 0f, 12f, 20f }; 
+            // KOPERTA: Odpowiednio powiększone miejsca (szeroka luka)
+            float[] carPositionsZ = { 0f, 16f, 24f }; 
             
             foreach (float z in carPositionsZ)
             {
-                GameObject parkedCar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                parkedCar.transform.SetParent(currentMap.transform);
-                parkedCar.transform.localScale = new Vector3(2.5f, 1.5f, 5.0f);
-                parkedCar.transform.position = new Vector3(3.0f, 0.75f, z);
-                parkedCar.GetComponent<MeshRenderer>().material = carMat;
+                if (parkedCarPrefab != null)
+                {
+                    // Generowanie z Twojego modelu 3D (Y=0, bo modele zwykle mają pivot na spodzie)
+                    GameObject parkedCar = Instantiate(parkedCarPrefab, new Vector3(3.0f, 0f, z), Quaternion.identity);
+                    parkedCar.transform.SetParent(currentMap.transform);
+                    if (parkedCar.GetComponent<Collider>() == null) parkedCar.AddComponent<BoxCollider>();
+                }
+                else
+                {
+                    // Rezerwowy sześcian w razie braku modelu
+                    GameObject parkedCar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    parkedCar.transform.SetParent(currentMap.transform);
+                    parkedCar.transform.localScale = new Vector3(2.5f, 1.5f, 5.0f);
+                    parkedCar.transform.position = new Vector3(3.0f, 0.75f, z);
+                    parkedCar.GetComponent<MeshRenderer>().material = carMat;
+                }
             }
 
             GameObject line = GameObject.CreatePrimitive(PrimitiveType.Cube);
             line.transform.SetParent(currentMap.transform);
-            line.transform.localScale = new Vector3(0.2f, 0.15f, 40f);
-            line.transform.position = new Vector3(0.5f, 0.05f, 10f);
+            line.transform.localScale = new Vector3(0.2f, 0.15f, 50f);
+            line.transform.position = new Vector3(0.5f, 0.05f, 15f);
             line.GetComponent<MeshRenderer>().material = lineMat;
             Destroy(line.GetComponent<BoxCollider>());
         }
         else
         {
-            // PROSTOPADŁE (Luka 3.5m - tryb 2, auta bliżej X=4, laser sięgnie)
+            // PROSTOPADŁE: Każde miejsce poszerzone (szeroka luka 4.5m)
             int spots = 8;
-            float spotWidth = 3.5f; 
+            float spotWidth = 4.5f; 
             float spotLength = 6.0f;
             int emptySpot = 3; 
 
@@ -106,11 +118,22 @@ public class ParkingManager : MonoBehaviour
 
                 if (i != emptySpot)
                 {
-                    GameObject parkedCar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    parkedCar.transform.SetParent(currentMap.transform);
-                    parkedCar.transform.localScale = new Vector3(5.0f, 1.5f, 2.5f);
-                    parkedCar.transform.position = new Vector3(spotLength / 2f + 1f, 0.75f, zPos + (spotWidth / 2f));
-                    parkedCar.GetComponent<MeshRenderer>().material = carMat;
+                    if (parkedCarPrefab != null)
+                    {
+                        // Generowanie z Twojego modelu 3D (obróconego o 90 stopni w poprzek drogi)
+                        GameObject parkedCar = Instantiate(parkedCarPrefab, new Vector3(spotLength / 2f + 1f, 0f, zPos + (spotWidth / 2f)), Quaternion.Euler(0, -90, 0));
+                        parkedCar.transform.SetParent(currentMap.transform);
+                        if (parkedCar.GetComponent<Collider>() == null) parkedCar.AddComponent<BoxCollider>();
+                    }
+                    else
+                    {
+                        // Rezerwowy sześcian w razie braku modelu
+                        GameObject parkedCar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                        parkedCar.transform.SetParent(currentMap.transform);
+                        parkedCar.transform.localScale = new Vector3(5.0f, 1.5f, 2.5f);
+                        parkedCar.transform.position = new Vector3(spotLength / 2f + 1f, 0.75f, zPos + (spotWidth / 2f));
+                        parkedCar.GetComponent<MeshRenderer>().material = carMat;
+                    }
                 }
             }
         }

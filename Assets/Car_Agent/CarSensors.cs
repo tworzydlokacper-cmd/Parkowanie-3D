@@ -4,25 +4,26 @@ using TMPro;
 public class CarSensors : MonoBehaviour
 {
     [Header("Ustawienia Zasięgu")]
-    public float sideSensorLength = 8f; 
+    public float sideSensorLength = 10f; 
     public float frontBackSensorLength = 3f;
 
     [Header("Dane dla Maszyny Stanów")]
     public bool isGapDetected = false;
     public bool isGapValid = false;
     public bool isFrontBlocked = false;
-    public int parkingMode = 0; // 0 = brak, 1 = koperta, 2 = prostopadłe
+    public int parkingMode = 0; 
     public TextMeshProUGUI uiText;
 
     private Vector3 gapStartPosition;
-    private bool hasSeenFirstCar = false; // BLOKADA PUSTEGO STARTU
+    private bool hasSeenFirstCar = false; 
 
-    public Vector3[] rightSensors = { new Vector3(1, 0, 2), new Vector3(1, 0, 0.6f), new Vector3(1, 0, -0.6f), new Vector3(1, 0, -2) };
-    public Vector3[] leftSensors = { new Vector3(-1, 0, 2), new Vector3(-1, 0, 0.6f), new Vector3(-1, 0, -0.6f), new Vector3(-1, 0, -2) };
+    public Vector3[] rightSensors = { new Vector3(1, 0.5f, 2), new Vector3(1, 0.5f, 0.6f), new Vector3(1, 0.5f, -0.6f), new Vector3(1, 0.5f, -2) };
+    public Vector3[] leftSensors = { new Vector3(-1, 0.5f, 2), new Vector3(-1, 0.5f, 0.6f), new Vector3(-1, 0.5f, -0.6f), new Vector3(-1, 0.5f, -2) };
+    
     public Vector3[] frontSensors = { new Vector3(0.8f, 0, 2.25f), new Vector3(0.3f, 0, 2.25f), new Vector3(-0.3f, 0, 2.25f), new Vector3(-0.8f, 0, 2.25f) };
     public Vector3[] backSensors = { new Vector3(0.8f, 0, -2.25f), new Vector3(0.3f, 0, -2.25f), new Vector3(-0.3f, 0, -2.25f), new Vector3(-0.8f, 0, -2.25f) };
 
-    void FixedUpdate() // ZMIENIONO NA FIXEDUPDATE dla synchr. z FSM
+    void FixedUpdate() 
     {
         bool rightSideClear = ScanDirection(rightSensors, transform.right, sideSensorLength, Color.green);
         ScanDirection(leftSensors, -transform.right, sideSensorLength, Color.green);
@@ -49,13 +50,11 @@ public class CarSensors : MonoBehaviour
 
     void MeasureParkingGap(bool isSideClear)
     {
-        // 1. Zdejmujemy blokadę, gdy radar pierwszy raz "dotknie" zaparkowanego auta
         if (!isSideClear) 
         {
             hasSeenFirstCar = true;
         }
 
-        // 2. Szukamy luki DOPIERO, gdy blokada jest zdjęta
         if (isSideClear && !isGapDetected && hasSeenFirstCar)
         {
             isGapDetected = true; isGapValid = false; parkingMode = 0;

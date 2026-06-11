@@ -144,7 +144,9 @@ MonoBehaviour:
   maxMotorForce: 500
   maxBrakeForce: 20000
   maxSteerAngle: 35
-  timeToFullLock: 1
+  wheelbase: 1.76
+  trackWidth: 1
+  pGain: 1500
 --- !u!114 &6313307878602497644
 MonoBehaviour:
   m_ObjectHideFlags: 0

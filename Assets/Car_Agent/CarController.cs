@@ -9,55 +9,89 @@ public class CarController : MonoBehaviour
     public WheelCollider rearRightWheel;
 
     [Header("Parametry Jazdy")]
-    // ZWIĘKSZONO MOC (500f na 2000f), żeby na pewno ruszył z masą 1500kg
-    public float maxMotorForce = 2000f; 
+    public float maxMotorForce = 2000f;
     public float maxBrakeForce = 3000f;
     public float maxSteerAngle = 35f;
-    public float timeToFullLock = 1f;
 
-    private float currentSteerAngle = 0f;
+    [Header("Geometria Ackermanna")]
+    [Tooltip("Dystans między przednią a tylną osią (L)")]
+    public float wheelbase = 2.7f; 
+    [Tooltip("Dystans między lewym a prawym kołem (W)")]
+    public float trackWidth = 1.5f; 
+
+    [Header("Regulator PID (P-Controller)")]
+    [Tooltip("Wzmocnienie - jak mocno auto reaguje na błąd odległości")]
+    public float pGain = 1500f; 
+
     private Rigidbody rb;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        
-        // Zabezpieczenie przed wywrotkami i masa 1.5 tony
-        rb.mass = 1500f; 
-        rb.centerOfMass = new Vector3(0f, -1.5f, 0f); 
+        rb.mass = 1500f;
+        rb.centerOfMass = new Vector3(0f, -1.0f, 0f);
     }
 
     public void MoveCar(float gasInput, float steeringInput)
     {
-        // Hamowanie, gdy nie ma gazu
-        if (gasInput == 0f)
-        {
-            rearLeftWheel.motorTorque = rearRightWheel.motorTorque = 0f;
-            frontLeftWheel.brakeTorque = frontRightWheel.brakeTorque = maxBrakeForce;
-            rearLeftWheel.brakeTorque = rearRightWheel.brakeTorque = maxBrakeForce;
-        }
-        else
-        {
-            frontLeftWheel.brakeTorque = frontRightWheel.brakeTorque = 0f;
-            rearLeftWheel.brakeTorque = rearRightWheel.brakeTorque = 0f;
-            
-            float torque = gasInput * maxMotorForce;
-            rearLeftWheel.motorTorque = rearRightWheel.motorTorque = torque;
-        }
-
-        // Układ kierowniczy
-        float targetAngle = steeringInput * maxSteerAngle;
-        float steerSpeed = (maxSteerAngle * 2) / timeToFullLock;
-        
-        currentSteerAngle = Mathf.MoveTowards(currentSteerAngle, targetAngle, steerSpeed * Time.deltaTime);
-
-        frontLeftWheel.steerAngle = frontRightWheel.steerAngle = currentSteerAngle;
+        ApplyMotorTorque(gasInput * maxMotorForce);
+        ApplyAckermannSteering(steeringInput * maxSteerAngle);
     }
 
-    public float GetSteeringAngleTowards(Vector3 targetPosition)
+    public void MoveWithPID(float distanceError, float steeringInput)
     {
-        Vector3 relativePos = transform.InverseTransformPoint(targetPosition);
-        float angle = Mathf.Atan2(relativePos.x, relativePos.z) * Mathf.Rad2Deg;
-        return Mathf.Clamp(angle / maxSteerAngle, -1f, 1f);
+        float targetForce = distanceError * pGain;
+        targetForce = Mathf.Clamp(targetForce, -maxMotorForce, maxMotorForce);
+
+        ApplyMotorTorque(targetForce);
+        ApplyAckermannSteering(steeringInput * maxSteerAngle);
+    }
+
+    public void StopCar()
+    {
+        rearLeftWheel.motorTorque = rearRightWheel.motorTorque = 0f;
+        frontLeftWheel.brakeTorque = frontRightWheel.brakeTorque = maxBrakeForce;
+        rearLeftWheel.brakeTorque = rearRightWheel.brakeTorque = maxBrakeForce;
+    }
+
+    private void ApplyMotorTorque(float force)
+    {
+        if (Mathf.Abs(force) < 10f) 
+        {
+            StopCar();
+            return;
+        }
+
+        frontLeftWheel.brakeTorque = frontRightWheel.brakeTorque = 0f;
+        rearLeftWheel.brakeTorque = rearRightWheel.brakeTorque = 0f;
+
+        rearLeftWheel.motorTorque = force;
+        rearRightWheel.motorTorque = force;
+    }
+
+    private void ApplyAckermannSteering(float steerAngle)
+    {
+        if (Mathf.Abs(steerAngle) < 0.1f)
+        {
+            frontLeftWheel.steerAngle = 0f;
+            frontRightWheel.steerAngle = 0f;
+            return;
+        }
+
+        float angleRad = Mathf.Abs(steerAngle) * Mathf.Deg2Rad;
+
+        float insideAngle = Mathf.Atan(wheelbase / ((wheelbase / Mathf.Tan(angleRad)) - (trackWidth / 2f))) * Mathf.Rad2Deg;
+        float outsideAngle = Mathf.Atan(wheelbase / ((wheelbase / Mathf.Tan(angleRad)) + (trackWidth / 2f))) * Mathf.Rad2Deg;
+
+        if (steerAngle > 0) 
+        {
+            frontRightWheel.steerAngle = insideAngle;  
+            frontLeftWheel.steerAngle = outsideAngle;
+        }
+        else 
+        {
+            frontLeftWheel.steerAngle = -insideAngle;  
+            frontRightWheel.steerAngle = -outsideAngle;
+        }
     }
 }
