@@ -103,8 +103,11 @@ MonoBehaviour:
   isGapDetected: 0
   isGapValid: 0
   isFrontBlocked: 0
-  parkingMode: 0
+  parkingMode: 1
   uiText: {fileID: 0}
+  gapStartPosition: {x: 0, y: 0, z: 0}
+  gapEndPosition: {x: 0, y: 0, z: 0}
+  gapSize: 0
   rightSensors:
   - {x: 1, y: 0, z: 2}
   - {x: 1, y: 0, z: 0.6}
@@ -159,7 +162,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d1a3ed6969ada944bd3ba4eec6184dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParkingFSM
-  currentState: 0
+  controller: {fileID: 0}
+  sensors: {fileID: 0}
 --- !u!1 &1724261157189033995
 GameObject:
   m_ObjectHideFlags: 0
